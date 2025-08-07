@@ -3,11 +3,10 @@
 Uma ferramenta web simples e poderosa para **digitalizar estruturas químicas a partir de imagens**.  
 A aplicação utiliza **Python**, **Flask**, **Docker** e **RDKit** para extrair, analisar e exibir dados moleculares de forma interativa.
 
-<blockquote class="imgur-embed-pub" lang="pt" data-id="nf982qB"><a href="https://imgur.com/nf982qB">View post on imgur.com</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
-
+![Demonstração do Moleculens](https://i.imgur.com/nf982qB.gif)
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 - **Conversão Inteligente:** Usa o OSRA via Docker para converter imagens de moléculas em SMILES.  
 - **Múltiplos Métodos de Upload:** Upload por clique, arrastar e soltar, colar da área de transferência (Ctrl+V) ou capturar foto no celular.  
