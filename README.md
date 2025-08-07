@@ -3,8 +3,7 @@
 Uma ferramenta web simples e poderosa para **digitalizar estruturas químicas a partir de imagens**.  
 A aplicação utiliza **Python**, **Flask**, **Docker** e **RDKit** para extrair, analisar e exibir dados moleculares de forma interativa.
 
-![Demonstração do Moleculens](https://i.imgur.com/nf982qB.gif)
----
+![Demonstração da Aplicação](assets/moleculens.gif)---
 
 ##  Funcionalidades
 
