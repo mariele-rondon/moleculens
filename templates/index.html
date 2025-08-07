@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imagem para SMILES</title>
+
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+        })();
+    </script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <button id="theme-toggle" class="theme-toggle" title="Alterar tema"></button>
+    
+    <div class="container">
+        <h1>Moleculens</h1>
+        <p class="upload-text"> Conversor de Imagem de Molécula</p>
+        <p>Arraste e solte, clique nos botões, ou cole uma imagem (Ctrl+V) para converter.</p>
+
+        <form id="upload-form" action="/process" method="POST" enctype="multipart/form-data">
+            <div id="drop-zone">
+                <div class="upload-icon">↑</div>
+                <div class="upload-text">Arraste e Solte a Imagem Aqui</div>
+                <div class="upload-text-small">ou</div>
+                
+                <div class="button-container">
+                    <button type="button" id="browse-btn" class="button-browse">Selecione o Arquivo</button>
+                    <button type="button" id="camera-btn" class="button-browse">Tirar Foto</button>
+                </div>
+                
+                <input type="file" name="image" id="file-input" accept="image/*">
+            </div>
+        </form>
+        <div id="loading-indicator">Processando, por favor aguarde...</div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const browseBtn = document.getElementById('browse-btn');
+        const cameraBtn = document.getElementById('camera-btn');
+
+        function handleFileUpload(file) {
+            if (!file) { return; }
+            if (!file.type.startsWith('image/')) {
+                alert('Por favor, envie um arquivo de imagem válido.');
+                return;
+            }
+            dropZone.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            const formData = new FormData();
+            formData.append('image', file, file.name || 'camera-shot.png');
+            fetch('/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok && response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    dropZone.style.display = 'block';
+                    loadingIndicator.style.display = 'none';
+                    alert('Ocorreu um erro ao enviar a imagem.');
+                }
+            })
+            .catch(error => {
+                dropZone.style.display = 'block';
+                loadingIndicator.style.display = 'none';
+                console.error('Erro:', error);
+                alert('Ocorreu um erro de rede ao enviar a imagem.');
+            });
+        }
+
+        // Clique no botão "Selecione o Arquivo"
+        browseBtn.addEventListener('click', () => {
+            fileInput.removeAttribute('capture');
+            fileInput.click();
+        });
+
+        // Clique no botão "Tirar Foto"
+        cameraBtn.addEventListener('click', () => {
+            fileInput.setAttribute('capture', 'environment');
+            fileInput.click();
+        });
+        
+        // A área de drop zone inteira também funciona como "Selecionar Arquivo"
+        dropZone.addEventListener('click', (event) => {
+            // Garante que o clique na área só abra o seletor se o clique não for nos próprios botões
+            if (event.target !== browseBtn && event.target !== cameraBtn) {
+               fileInput.removeAttribute('capture');
+               fileInput.click();
+            }
+        });
+
+        // Listener de mudança para o input de arquivo
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                handleFileUpload(fileInput.files[0]);
+            }
+        });
+
+        // Lógica de Arrastar e Soltar
+        dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
+        dropZone.addEventListener('dragenter', (event) => { event.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (event.dataTransfer.files.length > 0) { handleFileUpload(event.dataTransfer.files[0]); }
+        });
+
+        // Lógica de Colar
+        window.addEventListener('paste', (event) => {
+            const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+            for (const item of items) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    handleFileUpload(blob);
+                    break;
+                }
+            }
+        });
+    </script>
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</body>
+</html>

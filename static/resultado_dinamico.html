@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado da Conversão</title>
+    <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+    
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+        })();
+    </script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <button id="theme-toggle" class="theme-toggle" title="Alterar tema"></button>
+    <div class="container" id="result-container">
+        </div>
+    
+    <script src="theme.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let viewer = null; 
+            const molDataString = localStorage.getItem('molData');
+            const container = document.getElementById('result-container');
+
+            // Esta verificação agora está correta, pois o script no <head> já rodou.
+            const isDarkMode = document.documentElement.classList.contains('dark-mode');
+            const initialBackgroundColor = isDarkMode ? 'black' : 'white';
+
+            if (molDataString) {
+                const data = JSON.parse(molDataString);
+                
+                const warningHtml = data.contains_r_group
+                    ? `<div class="alert-warning"><strong>Atenção:</strong> A imagem original parece conter uma abreviação ou um grupo genérico (ex: R, X, Ar) em sua estrutura. O sistema representou esta parte variável com um asterisco (<b>*</b>) no SMILES. Para utilizar esta estrutura em outros softwares, você precisará editar o código SMILES manualmente e substituir o asterisco pelo átomo ou grupo químico desejado.</div>`
+                    : '';
+                
+                container.innerHTML = `
+                    <h1 class="success">Conversão Realizada com Sucesso!</h1>
+                    ${warningHtml}
+                    <div class="grid-container">
+                        <div>
+                            <div class="result-item">
+                                <p class="result-key">Estrutura 2D:</p>
+                                <div id="molecule-drawing">${data.molecule_svg}</div>
+                                <div class="download-container">
+                                    <a id="download-svg-btn" class="button button-secondary" href="#" download="molecula.svg">Baixar SVG</a>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <p class="result-key">SMILES:</p>
+                                <div class="result-value"><span id="smiles-text">${data.smiles}</span><button class="copy-btn" onclick="copyToClipboard('smiles-text')" title="Copiar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3z"/></svg></button></div>
+                            </div>
+                            <div class="result-item">
+                                <p class="result-key">InChI:</p>
+                                <div class="result-value"><span id="inchi-text">${data.inchi}</span><button class="copy-btn" onclick="copyToClipboard('inchi-text')" title="Copiar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3z"/></svg></button></div>
+                            </div>
+                            <div class="result-item">
+                                <p class="result-key">InChIKey (Link para PubChem):</p>
+                                <div class="result-value">
+                                    <a id="inchikey-link" href="https://pubchem.ncbi.nlm.nih.gov/#query=${data.inchikey}" target="_blank" rel="noopener noreferrer" title="Buscar no PubChem">
+                                        <span id="inchikey-text">${data.inchikey}</span>
+                                    </a>
+                                    <button class="copy-btn" onclick="copyToClipboard('inchikey-text')" title="Copiar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3z"/></svg></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="result-item">
+                                <p class="result-key">Estrutura 3D Interativa:</p>
+                                <div id="mol-3d-viewer"></div>
+                                <div class="style-controls">
+                                    <button id="style-line-btn" class="style-btn">Linhas</button>
+                                    <button id="style-stick-btn" class="style-btn">Varetas</button>
+                                    <button id="style-ballstick-btn" class="style-btn">Bolas e Varetas</button>
+                                    <button id="style-sphere-btn" class="style-btn">Esferas</button>
+                                </div>
+                                <div class="color-controls">
+                                    <label for="bg-color-select" class="color-label">Cor de Fundo:</label>
+                                    <select id="bg-color-select">
+                                        <option value="white" ${!isDarkMode ? 'selected' : ''}>Branco</option>
+                                        <option value="black" ${isDarkMode ? 'selected' : ''}>Preto</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <p class="result-key">Propriedades Calculadas:</p>
+                                <div class="properties-grid">
+                                    <div class="result-value"><b>Fórmula:</b> ${data.mol_formula}</div>
+                                    <div class="result-value"><b>Peso Mol.:</b> ${data.mol_weight}</div>
+                                    <div class="result-value"><b>LogP:</b> ${data.logp}</div>
+                                    <div class="result-value"><b>TPSA:</b> ${data.tpsa} Å²</div>
+                                    <div class="result-value"><b>Doadores H:</b> ${data.h_donors}</div>
+                                    <div class="result-value"><b>Aceptores H:</b> ${data.h_acceptors}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="actions-container">
+                        <a href="/" class="button">Converter Outra Imagem</a>
+                        <button id="copy-all-btn" class="button button-secondary">Copiar Todos os Dados</button>
+                    </div>
+                `;
+
+                // Configurações e links
+                const svgBlob = new Blob([data.molecule_svg], { type: 'image/svg+xml;charset=utf-8' });
+                document.getElementById('download-svg-btn').href = URL.createObjectURL(svgBlob);
+                document.getElementById('copy-all-btn').addEventListener('click', () => {
+                    const allDataText = `SMILES: ${data.smiles}\nInChI: ${data.inchi}\nInChIKey: ${data.inchikey}\n\nFórmula: ${data.mol_formula}\nPeso Molecular: ${data.mol_weight}\nLogP: ${data.logp}\nTPSA: ${data.tpsa}`;
+                    copyToClipboard(null, allDataText);
+                });
+
+                // Lógica para inicializar o visualizador 3D
+                if (data.molecule_sdf) {
+                    let viewer_element = document.getElementById('mol-3d-viewer');
+                    viewer = $3Dmol.createViewer(viewer_element, { backgroundColor: initialBackgroundColor });
+                    viewer.addModel(data.molecule_sdf, 'sdf');
+                    viewer.setStyle({}, {stick: {}});
+                    viewer.zoomTo();
+                    viewer.render();
+                }
+
+                // Event Listeners
+                document.getElementById('style-line-btn').addEventListener('click', () => { if (viewer) { viewer.setStyle({}, {line: {}}); viewer.render(); } });
+                document.getElementById('style-stick-btn').addEventListener('click', () => { if (viewer) { viewer.setStyle({}, {stick: {}}); viewer.render(); } });
+                document.getElementById('style-ballstick-btn').addEventListener('click', () => { if (viewer) { viewer.setStyle({}, {stick: {}, sphere: {scale: 0.25}}); viewer.render(); } });
+                document.getElementById('style-sphere-btn').addEventListener('click', () => { if (viewer) { viewer.setStyle({}, {sphere: {}}); viewer.render(); } });
+                
+                const bgColorSelect = document.getElementById('bg-color-select');
+                bgColorSelect.addEventListener('change', (event) => {
+                    if (viewer) { viewer.setBackgroundColor(event.target.value); viewer.render(); }
+                });
+
+                // NOVO: Faz o fundo do 3D mudar junto com o tema da página
+                window.addEventListener('themeChanged', (event) => {
+                    if (viewer) {
+                        const newBgColor = event.detail.theme === 'dark' ? 'black' : 'white';
+                        viewer.setBackgroundColor(newBgColor);
+                        viewer.render();
+                        bgColorSelect.value = newBgColor;
+                    }
+                });
+
+                localStorage.removeItem('molData');
+            } else {
+                container.innerHTML = `<h1>Erro</h1><p>Nenhum dado de resultado encontrado.</p><a href="/" class="back-link">Voltar</a>`;
+            }
+        });
+
+        function copyToClipboard(elementId, directText = null) {
+            const textToCopy = directText ? directText : document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert('Copiado para a área de transferência!');
+            }).catch(err => {
+                alert('Erro ao copiar: ', err);
+            });
+        }
+    </script>
+</body>
+</html>

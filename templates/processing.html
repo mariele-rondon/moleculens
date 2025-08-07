@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processando Imagem...</title>
+
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+        })();
+    </script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <button id="theme-toggle" class="theme-toggle" title="Alterar tema">🌙</button>
+
+    <div class="container">
+        
+        <div id="processing-content">
+            <h1>
+                <span id="title-text">Processando sua imagem...</span>
+                <div id="spinner" class="spinner"></div>
+            </h1>
+            <p>Aguarde enquanto a estrutura química é extraída. Você pode acompanhar o progresso abaixo.</p>
+            <div id="console"></div>
+
+            <div id="delayed-cancel-container" style="display: none;">
+                <p class="info-message">
+                    O processo está demorando mais que o esperado.<br>
+                    Você pode cancelar e tentar novamente, talvez com uma imagem de melhor resolução.
+                </p>
+                <div class="button-container">
+                    <button id="cancel-button" class="button button-cancel">Cancelar e Voltar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-container" style="display: none;">
+            <h1 class="error">Ocorreu uma Falha</h1>
+            <div id="error-box" class="error-box"></div>
+            <div class="button-container">
+                <button class="button button-retry" onclick="window.history.back()">Voltar e Tentar Novamente</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // O script de processamento.
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskId = '{{ task_id }}';
+            let taskCompleted = false;
+            let cancelTimer;
+
+            const processingContent = document.getElementById('processing-content');
+            const consoleDiv = document.getElementById('console');
+            const errorContainer = document.getElementById('error-container');
+            const errorBox = document.getElementById('error-box');
+            const delayedContainer = document.getElementById('delayed-cancel-container');
+            const cancelButton = document.getElementById('cancel-button');
+            const eventSource = new EventSource(`/stream-process/{{ filename }}/${taskId}`);
+
+            function endTask() {
+                taskCompleted = true;
+                clearTimeout(cancelTimer);
+                eventSource.close();
+            }
+
+            cancelTimer = setTimeout(function() {
+                if (!taskCompleted) {
+                    delayedContainer.style.display = 'block';
+                }
+            }, 10000);
+
+            window.addEventListener('beforeunload', function(event) {
+                if (!taskCompleted) {
+                    navigator.sendBeacon('/cancel/' + taskId, '');
+                }
+            });
+
+            cancelButton.addEventListener('click', function() {
+                cancelButton.disabled = true;
+                cancelButton.innerText = 'Cancelando...';
+                endTask();
+                navigator.sendBeacon('/cancel/' + taskId, '');
+                window.history.back();
+            });
+
+            eventSource.onmessage = function(event) {
+                if (event.data === ':heartbeat') return;
+                try {
+                    const data = JSON.parse(event.data);
+                    endTask();
+                    if (data.status === 'success') {
+                        consoleDiv.innerHTML += 'Sucesso! Redirecionando...\n';
+                        localStorage.setItem('molData', JSON.stringify(data));
+                        window.location.href = '/static/resultado_dinamico.html';
+                    } else { 
+                        handleError(data.message);
+                    }
+                } catch (e) {
+                    consoleDiv.innerHTML += event.data + '\n';
+                    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                }
+            };
+
+            eventSource.onerror = function(err) {
+                endTask();
+                handleError('A conexão com o servidor foi perdida. Verifique se o Docker está em execução e tente novamente.');
+            };
+
+            function handleError(message) {
+                processingContent.style.display = 'none';
+                errorBox.innerText = message;
+                errorContainer.style.display = 'block';
+            }
+        });
+    </script>
+
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</body>
+</html>
