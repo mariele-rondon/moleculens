@@ -38,7 +38,7 @@ A aplicação combina várias tecnologias:
 ### 1) Clonar o Repositório
 
 ```bash
-git clone https://github.com/seu-usuario/nome-do-seu-repositorio.git
+git clone https://github.com/mariele-rondon/moleculens.git
 cd nome-do-seu-repositorio
 ```
 
@@ -151,6 +151,3 @@ http://127.0.0.1:8080
 ## 📜 Licença
 
 Este projeto é distribuído sob a licença MIT — consulte o arquivo `LICENSE` para mais detalhes.
-```
-
-Se quiser, eu já salvo esse texto em um arquivo `README.md` aqui e te forneço um link para download — quer que eu faça isso?
