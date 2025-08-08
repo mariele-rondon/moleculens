@@ -39,7 +39,7 @@ A aplicação combina várias tecnologias:
 
 ```bash
 git clone https://github.com/mariele-rondon/moleculens.git
-cd nome-do-seu-repositorio
+cd moleculens
 ```
 
 > Substitua a URL pelo seu próprio repositório.
